@@ -1,0 +1,6 @@
+include requirements.txt
+include devel-requirements.txt
+
+recursive-include pywhmcs *.py
+
+recursive-exclude pywhmcs *.pyc
