@@ -1,7 +1,6 @@
 import string
 
 from pywhmcs import base
-from pywhmcs import exceptions
 
 
 class TicketBridge(base.BaseBridge):
@@ -73,7 +72,77 @@ class TicketBridge(base.BaseBridge):
 
         response = self.client.send_request("OpenTicket", params)
 
-        if response.get('result') == 'error':
-            raise exceptions.UnknownError(response['message'])
-
         return int(response["tid"])
+
+    def get_tickets(self, start_number=0, limit=25, dept_id=None, client_id=None,
+                    email=None, status=None, subject=None,
+                    ignore_dept_assignments=False) -> dict:
+        """
+        Get a list of tickets.
+
+        Gets a list of tickets matching the parameters passed.
+
+        :param int start_number: Offset for the returned resources
+        :param int limit: Number of resources to return
+        :param int dept_id: Limit query to specific department ID
+        :param int client_id: Limit query to specific client ID
+        :param str email: Limit query to specific non-client email address
+        :param str status: Limit query to those matching status
+        :param str subject: Limit query to those matching subject
+        :param bool ignore_dept_assignments:
+            Pass as ``True`` to _not_ limit to the departments the calling user is
+            a member of.
+        :return: Tickets matching the defined parameters.
+        :rtype: dict
+        """
+
+        params = {
+            "limitstart": start_number,
+            "limitnum": limit,
+            "deptid": dept_id,
+            "clientid": client_id,
+            "email": email,
+            "status": status,
+            "subject": subject,
+            "ignore_dept_assignments": ignore_dept_assignments
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+
+        response = self.client.send_request("GetTickets", params)
+
+        if not response["numreturned"]:
+            tickets = []
+        else:
+            tickets = response["tickets"]["ticket"]
+
+        return {
+            "total": int(response["totalresults"]),
+            "tickets": tickets,
+            "start_number": int(response["startnumber"])
+        }
+
+    def get_support_departments(self, ignore_dept_assignments=True):
+        """
+        Get WHMCS support departments.
+
+        Also provides limited stats on the department.
+
+        :return: List of WHMCS support departments
+        :rtype: list
+        """
+
+        params = {"ignore_dept_assignments": ignore_dept_assignments}
+
+        response = self.client.send_request("GetSupportDepartments", params)
+
+        departments = []
+        for department in response["departments"]["department"]:
+            departments.append({
+                "id": department["id"],
+                "name": department["name"],
+                "open_tickets": department["opentickets"],
+                "awaiting_reply": department["awaitingreply"]
+            })
+
+        return departments
+

@@ -1,10 +1,16 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union, List
 import hashlib
 
 import requests
 
 from pywhmcs import clients
 from pywhmcs import tickets
+from pywhmcs import orders
+from pywhmcs import billing
+from pywhmcs import invoices
+from pywhmcs import products
+from pywhmcs import promotions
+from pywhmcs import exceptions
 
 
 class Client:
@@ -17,6 +23,11 @@ class Client:
         # Setup bridges
         self.clients = clients.ClientBridge(self)
         self.tickets = tickets.TicketBridge(self)
+        self.orders = orders.OrdersBridge(self)
+        self.billing = billing.BillingBridge(self)
+        self.invoices = invoices.InvoiceBridge(self)
+        self.products = products.ProductsBridge(self)
+        self.promotions = promotions.PromotionsBridge(self)
 
     def send_request(self, action: str, params=None) -> Dict[Any, Any]:
         """
@@ -39,4 +50,11 @@ class Client:
         response = requests.post(self.api_url, data=payload)
         content = response.json()
 
+        if content.get('result') == 'error':
+            raise exceptions.from_response(content, action)
+
         return content
+
+
+
+
