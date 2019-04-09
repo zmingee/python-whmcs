@@ -8,7 +8,6 @@ from pywhmcs import exceptions
 
 @dataclasses.dataclass
 class ClientResource(base.BaseResource):
-    bridge: dataclasses.InitVar[ClientBridge]
     # User information
     id: int
     user_id: int
@@ -63,76 +62,38 @@ class ClientResource(base.BaseResource):
     twofa_enabled: bool
     custom_fields: List[Dict[str, str]]
 
-    def update(self, **kwargs):
-        self.bridge.update_client(self, kwargs)
-
-    def delete(self):
-        self.bridge.delete_client(self)
-
-    def save(self):
-        raise NotImplementedError
-
-    def enable(self):
-        self.bridge.enable(self)
-
-    def disable(self):
-        self.bridge.disable(self)
-
 
 class ClientBridge(base.BaseBridge):
 
-    def create(self, email: str, password: str, first_name: str, last_name: str, address1: str, city: str,
-               state: str, postcode: str, country: str, phone_number: str, company_name: str = None,
-               address2: str = None, currency: int = None, client_ip: str=None, language: str=None,
-               group_id: str = None, security_q_id: str = None, security_q_ans: str = None,
-               notes: str=None, cardtype: str = None, cardnum: str = None, expdate: str = None,
-               start_date: str = None, issue_number: str = None, custom_fields: str = None,
-               no_email: str = 'true', skip_validation: str = 'false') -> ClientResource:
+    def create(self,
+               email: str,
+               password: str,
+               first_name: str,
+               last_name: str,
+               address1: str,
+               city: str,
+               state: str,
+               postcode: str,
+               country: str,
+               phone_number: str,
+               company_name: Optional[str] = None,
+               address2: Optional[str] = None,
+               currency: Optional[int] = None,
+               client_ip: Optional[str]=None,
+               language: Optional[str] =None,
+               group_id: Optional[str] = None,
+               security_q_id: Optional[str] = None,
+               security_q_ans: Optional[str] = None,
+               notes: Optional[str] =None,
+               cc_type: Optional[str] = None,
+               cc_pan: Optional[str] = None,
+               cc_exp_date: Optional[str] = None,
+               start_date: Optional[str] = None,
+               issue_number: Optional[str] = None,
+               custom_fields: Optional[str] = None,
+               no_email: Optional[str] = 'true',
+               skip_validation: Optional[str] = 'false') -> ClientResource:
         """
-        Create a WHMCS client account
-
-        :param str email: User's email
-        :param str password: User's password
-        :param str first_name: User's first_name
-        :param str last_name: User's last_name
-        :param str address1: First line of user's billing address
-        :param str city: Billing address city
-        :param str state: Billing address state
-        :param str postcode: Billing address postal/zip code
-        :param str country: Billing address ISO country code
-        :param str phone_number: User's contact phone number
-        :param str company_name: OPTIONAL - Name of user's company
-        :param str address2: OPTIONAL - Second line of user's billing address
-        :param int currency: OPTIONAL - Currency ID to assign to client account
-        :param str client_ip:
-            OPTIONAL - IP address of originating request; used for various
-            functionalities such as fraud checking
-        :param str language: OPTIONAL - User's defaut language
-        :param str group_id: OPTIONAL - Group to assign client account to
-        :param str security_q_id:
-            OPTIONAL - Security/Verification question ID
-        :param str security_q_ans:
-            OPTIONAL - Security/Verification question answer
-        :param str notes:
-            OPTIONAL - Notes to assign to the user's client account
-        :param str cardtype: OPTIONAL - Credit card type/provider
-        :param str cardnum: OPTIONAL - Credit card number
-        :param str expdate: OPTIONAL - Credit card expiration date
-        :param str start_date:
-            OPTIONAL - Credit card start date (if applicable)
-        :param str issuenumber:
-            OPTIONAL - Credit card issue number (if applicable)
-        :param str cvv:
-            OPTIONAL - Credit card CVV/CSC number (will not be stored)
-        :param str custom_fields:
-            OPTIONAL - Custom fields to set on client account
-        :param bool no_email:
-            OPTIONAL - Pass as ``True`` to skip sending welcome email
-        :param bool skip_validation:
-            OPTIONAL - Pass as ``True`` to ignore required fields validation
-        :return: New client account
-        :rtype: :py:class:`auth.whmcs.Client`
-
         .. note::
             ``country`` param must be an ISO country code. Please see
             ISO 3166-1 alpha-2 -
@@ -168,9 +129,9 @@ class ClientBridge(base.BaseBridge):
             'securityqid': security_q_id,
             'securityqans': security_q_ans,
             'notes': notes,
-            'cardtype': cardtype,
-            'cardnum': cardnum,
-            'expdate': expdate,
+            'cardtype': cc_type,
+            'cardnum': cc_pan,
+            'expdate': cc_exp_date,
             'startdate': start_date,
             'issuenumber': issue_number,
             'customfields': custom_fields,
@@ -184,34 +145,30 @@ class ClientBridge(base.BaseBridge):
             params=params
         )
 
-        return self.get(response['clientid'])
+        return self.get(email)
 
     def get(self, resource: Union[str, int]) -> ClientResource:
         """
         Get a :class:`ClientResource` from WHMCS.
 
         :param resource: ID or email of client to get
+        :param: str or int
         :return: Client
-        :rtype: :client:`ClientResource`
+        :rtype: :class:`ClientResource`
         :raises: :class:`pywhmcs.exceptions.ClientNotFound`
+        :raises: :class:`pywhmcs.exceptions.UnknownError
         """
 
         try:
             response = self.client.send_request(
-                action='GetClientsDetails',
+                action='getclientsdetails',
                 params={'clientid': int(resource)}
             )
         except ValueError:
             response = self.client.send_request(
-                action='GetClientsDetails',
+                action='getclientsdetails',
                 params={'email': resource}
             )
-
-        if (response.get('result') == 'error'
-                and response['message'].lower() == 'client not found'):
-            raise exceptions.ClientNotFound
-        elif response.get('result') == 'error':
-            raise exceptions.UnknownError(response['message'])
 
         client = ClientResource(
             self,
@@ -265,96 +222,77 @@ class ClientBridge(base.BaseBridge):
 
         return client
 
-    def list_clients(self) -> list:
-        """
-        List WHMCS clients.
-        """
-        clients = []
+    # def get_clients_products(self,
+    #                          resource: Union[ClientResource, int],
+    #                          service_id: int = None,
+    #                          product_id: int = None,
+    #                          start_number: int = 0) -> dict:
+    #     client_id = base.getid(resource)
 
-        response = self.client.send_request(action='getclients')
+    #     params = {
+    #         k: v for k, v
+    #         in {
+    #             "clientid": client_id,
+    #             "serviceid": service_id,
+    #             "pid": product_id,
+    #             "limitstart": start_number
+    #         }.items() if v is not None
+    #     }
 
-        for client in response['clients']['client']:
-            clients.append(client)
+    #     response = self.client.send_request("GetClientsProducts", params)
 
-        return clients
+    #     if not response["numreturned"]:
+    #         products = []
+    #     else:
+    #         products = response["products"]["product"]
 
-    def get_clients_products(self, resource: Union[ClientResource, int], service_id: int = None, product_id: int = None,
-                             start_number: int = 0) -> dict:
-        """
-        Get products for given client
+    #     return {
+    #         "total": int(response["totalresults"]),
+    #         "products": products,
+    #         "start_number": int(response["startnumber"])
+    #     }
 
-        :param resource: Client to lookup products for
-        :param int service_id: Get product matching given client product ID
-        :param int product_id: Limit search to a specific product ID
-        :param int start_number: Products index to start lookup on
-        :param int limit: Total number of products to return
-        :return: Products matching given criteria for the specified client ID
-        :rtype: dict
-        """
-        client_id = base.getid(resource)
-
-        params = {
-            k: v for k, v
-            in {
-            "clientid": client_id,
-            "serviceid": service_id,
-            "pid": product_id,
-            "limitstart": start_number
-        }.items()
-            if v is not None
-        }
-
-        response = self.client.send_request("GetClientsProducts", params)
-
-        if not response["numreturned"]:
-            products = []
-        else:
-            products = response["products"]["product"]
-
-        return {
-            "total": int(response["totalresults"]),
-            "products": products,
-            "start_number": int(response["startnumber"])
-        }
-
-    def update_client(self, resource: Union[ClientResource, int], **kwargs) -> None:
+    def update(self, resource: Union[ClientResource, int], **kwargs) -> None:
         """
             Update WHMCS client account.
 
             :param resource: Instance or ID of client to update
             """
 
-        accepted_params = [
-            "email",
-            "password2",
-            "firstname",
-            "lastname",
-            "companyname",
-            "address1",
-            "address2",
-            "city",
-            "state",
-            "postcode",
-            "country",
-            "phonenumber",
-            "credit",
-            "notes",
-            "cardtype",
-            "cardnum",
-            "expdate",
-            "status",
-            "customfields"
-        ]
-        params = {k: v for k, v in kwargs.items() if k in accepted_params and v is not None}
-        params['clientid'] = str(base.getid(resource))
+        params = {
+            k: v for (k, v)
+            in {
+                'clientid': str(base.getid(resource)),
+                'address1': kwargs.get('address1'),
+                'address2': kwargs.get('address2'),
+                'cardnum': kwargs.get('cc_pan'),
+                'cardtype': kwargs.get('cc_type'),
+                'city': kwargs.get('city'),
+                'companyname': kwargs.get('company_name'),
+                'country': kwargs.get('country'),
+                'credit': kwargs.get('credit'),
+                'customfields': kwargs.get('custom fields'),
+                'email': kwargs.get('email'),
+                'expdate': kwargs.get('cc_exp_date'),
+                'firstname': kwargs.get('first_name'),
+                'lastname': kwargs.get('last_name'),
+                'notes': kwargs.get('notes'),
+                'password2': kwargs.get('password'),
+                'phonenumber': kwargs.get('phone_number'),
+                'postcode': kwargs.get('post_code'),
+                'state': kwargs.get('state'),
+                'status': kwargs.get('status')
+            }.items() if v is not None
+        }
 
         response = self.client.send_request(
             action='updateclient',
             params=params
         )
-        return response
 
-    def delete_client(self, resource: Union[ClientResource, int]) -> None:
+        return self.get(base.getid(resource))
+
+    def delete(self, resource: Union[ClientResource, int]) -> None:
         """
         Delete WHMCS client account.
 
@@ -363,11 +301,9 @@ class ClientBridge(base.BaseBridge):
         client_id = base.getid(resource)
 
         response = self.client.send_request(
-            action='DeleteClient',
+            action='deleteclient',
             params={'clientid': client_id}
         )
-
-        return response
 
     def close_client(self, resource: Union[ClientResource, int]) -> None:
         """
@@ -378,52 +314,6 @@ class ClientBridge(base.BaseBridge):
         client_id = base.getid(resource)
 
         response = self.client.send_request(
-            action='CloseClient',
-            params={'clientid': client_id,
-                    }
+            action='closeclient',
+            params={'clientid': client_id}
         )
-
-        return response
-
-    def enable_client(self, resource: Union[ClientResource, int]) -> None:
-        """
-        Enable WHMCS client account.
-
-        :param resource: ID or Instance of client to enable
-        """
-
-        client_id = base.getid(resource)
-
-        response = self.client.send_request(
-            action='updateclient',
-            params={
-                'clientid': client_id,
-                'status': 'Active'
-            }
-        )
-        return response
-
-    def disable_client(self, resource: Union[ClientResource, int]) -> None:
-        """
-        Disable WHMCS client account.
-
-        :param resource: ID or Instance of client to disable
-        """
-
-        client_id = base.getid(resource)
-
-        response = self.client.send_request(
-            action='updateclient',
-            params={
-                'clientid': client_id,
-                'status': 'Inactive'
-            }
-        )
-        return response
-
-
-
-
-
-
-
