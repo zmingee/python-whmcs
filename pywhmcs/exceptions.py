@@ -1,41 +1,45 @@
-class WHMCSException(Exception, object):
+from typing import Optional
+
+class WHMCSException(Exception):
     """Base exception class for all internal exceptions."""
-    message = 'Unknown Error'
+    message: str
+    whmcs_message: Optional[str] = None
 
-    def __init__(self, message=None, details=None, action=None):
+    def __init__(self, message=None, action=None, response=None):
         super().__init__(message or self.__class__.message)
-        self.message = message or self.__class__.message
-        self.details = details
         self.action = action
-
-    def __str__(self):
-        return f'{self.action} {self.message}'
+        self.response = response
 
 
 class UnknownError(WHMCSException):
-    message = 'Unknown Error'
+    message = 'Unknown error'
+
+
+class ResourceNotFound(Exception):
+    message = 'Resource not found'
+
+
+class CommandNotFound(WHMCSException):
+    message = 'Command not found'
+    whmcs_message = 'command not found'
+
+
+class ClientNotFound(WHMCSException, ResourceNotFound):
+    message = 'Client not found'
+    whmcs_message = 'client not found'
+
+
+###
 
 
 class RestrictedIPError(WHMCSException):
     """Raised when attempting to call API from a non-whitelisted IP Address."""
-    message = 'Your IP ({0}) is not white-listed'
-
-    def __init__(self, message=None):
-        if message is not None:
-            message = message.lstrip('Invalid IP ')
-        super().__init__(self.message.format(message))
-
-
-class ClientNotFound(WHMCSException):
-    message = 'Client not found'
+    message = 'Source IP is not white-listed'
 
 
 class UserAlreadyExists(WHMCSException):
     """Raised when account already exists with specified email address."""
     message = 'A user already exists with that email address'
-
-    def __init__(self):
-        super().__init__(self.message)
 
 
 class AuthenticationFailed(WHMCSException):
@@ -49,11 +53,6 @@ class ResourceNotUnique(WHMCSException):
     resources.
     """
     message = "Multiple matching resources found"
-
-
-class ResourceNotFound(WHMCSException):
-    """Raised when a resource cannot be found"""
-    message = "Resource not found"
 
 
 class ParameterError(WHMCSException):
@@ -87,7 +86,7 @@ class ClientIDNotFound(WHMCSException):
 
 
 _error_classes = WHMCSException.__subclasses__()
-_code_map = dict((c.message, c) for c in _error_classes)
+_code_map = dict((c.whmcs_message, c) for c in _error_classes if c.whmcs_message)
 
 
 def from_response(response, action):
@@ -95,15 +94,15 @@ def from_response(response, action):
     Return an instance of an WHMCSException or subclass
     based on a response.
     """
-    error_message = response['error']['message']
-    cls = _code_map.get(error_message, WHMCSException)
 
-    kwargs = {
-        'message': error_message,
-        'action': action
-    }
+    content = response.json()
 
-    return cls(**kwargs)
+    whmcs_message = content['message'].lower()
 
+    cls = _code_map.get(whmcs_message)
+    if cls:
+        cls = cls(action=action, response=response)
+    else:
+        cls = UnknownError(content['message'], action=action, response=response)
 
-
+    return cls

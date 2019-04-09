@@ -26,8 +26,14 @@ class BaseResource:
     def __post_init__(self, bridge):
         self.bridge = bridge
 
+    def delete(self) -> None:
+        return self.bridge.delete(self) # type: ignore
+
     def to_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)
+
+    def update(self, **kwargs) -> BaseResource:
+        return self.bridge.update(self, **kwargs) # type: ignore
 
 
 class BaseBridge:

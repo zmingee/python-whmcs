@@ -22,12 +22,12 @@ class Client:
 
         # Setup bridges
         self.clients = clients.ClientBridge(self)
-        self.tickets = tickets.TicketBridge(self)
-        self.orders = orders.OrdersBridge(self)
-        self.billing = billing.BillingBridge(self)
-        self.invoices = invoices.InvoiceBridge(self)
-        self.products = products.ProductsBridge(self)
-        self.promotions = promotions.PromotionsBridge(self)
+        # self.tickets = tickets.TicketBridge(self)
+        # self.orders = orders.OrdersBridge(self)
+        # self.billing = billing.BillingBridge(self)
+        # self.invoices = invoices.InvoiceBridge(self)
+        # self.products = products.ProductsBridge(self)
+        # self.promotions = promotions.PromotionsBridge(self)
 
     def send_request(self, action: str, params=None) -> Dict[Any, Any]:
         """
@@ -48,13 +48,13 @@ class Client:
         payload.update(params)
 
         response = requests.post(self.api_url, data=payload)
+
+        if response.status_code != 200:
+            raise exceptions.from_response(response, action)
+
         content = response.json()
 
         if content.get('result') == 'error':
-            raise exceptions.from_response(content, action)
+            raise exceptions.from_response(response, action)
 
         return content
-
-
-
-
