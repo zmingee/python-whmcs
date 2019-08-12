@@ -4,15 +4,18 @@ DOCS_DIR := docs
 TESTS_DIR := tests
 
 
-.PHONY: $(NAME) all install install-devel uninstall check lint docs builddir clean distclean
+.PHONY: $(NAME) all install install-devel uninstall release check lint docs builddir clean distclean
 
 all: builddir $(NAME)
 
 $(NAME):
-	python setup.py bdist_wheel
+	python setup.py \
+	    sdist -d $(BUILD_DIR) \
+	    bdist -d $(BUILD_DIR) \
+	    bdist_wheel -d $(BUILD_DIR) --py-limited-api cp37
 
 install: $(NAME) | builddir uninstall
-	find dist/ -name "$(NAME)*.whl" | xargs -I FOO pip install FOO
+	find $(BUILD_DIR) -name "$(NAME)*.whl" | xargs pip install
 
 install-devel: $(NAME) | builddir uninstall
 	pip install -e .[devel]
@@ -20,27 +23,28 @@ install-devel: $(NAME) | builddir uninstall
 uninstall:
 	pip uninstall -y $(NAME)
 
-check: $(NAME) | builddir
-	nosetests -v \
-	    --logging-format="[%(asctime)s][%(levelname)-8s][%(name)s:%(funcName)s:%(lineno)d]: %(message)s" \
-	    --logging-datefmt="%Y-%m-%dT%H:%M:%S%Z" \
-	    --logging-level=DEBUG \
-	    --logging-filter=$(NAME),tests,py.warnings \
-	    --with-coverage \
-	    --cover-package=$(NAME) \
-	    --cover-min-percentage=66 \
-	    --no-byte-compile \
-	    --with-id \
-	    $(TESTS_DIR)
+release:
+	python setup.py \
+	    sdist -d $(BUILD_DIR) \
+	    bdist -d $(BUILD_DIR) \
+	    bdist_wheel -d $(BUILD_DIR) --py-limited-api cp37 \
+	    upload -r beyondhosting
+
+check:
+	pytest \
+		-rfE \
+		--tb=short \
+		--show-capture=no \
+		--maxfail=10 \
+		--cov=pywhmcs \
+		--cov-report term-missing:skip-covered \
+		$(TESTS_DIR)/
 
 lint: $(NAME) | builddir
-	pylint $(NAME) --rcfile=pylint.rc
+	pylint --rcfile=pylint.rc $(NAME)
 
 docs:
-	# Interpret warnings as errors
 	sphinx-build -nvT -b html $(DOCS_DIR) $(BUILD_DIR)/$(DOCS_DIR)
-	# Normal build
-	# sphinx-build -b html $(DOCS_DIR) $(BUILD_DIR)/$(DOCS_DIR)
 
 builddir:
 	@mkdir -p build
@@ -48,10 +52,10 @@ builddir:
 clean:
 	@- $(RM) -r build
 	@- $(RM) -r dist
+	@- $(RM) -rf .mypy_cache
+	@- $(RM) -rf ".coverage"
 	@- find . -name "*.egg-info" | xargs $(RM) -rf
 	@- find . -name "*.pyc" | xargs $(RM) -rf
-	@- find . -name ".coverage" | xargs $(RM) -rf
-	@- find . -name ".mypy_cache" | xargs $(RM) -rf
 	@- find . -name "__pycache__" | xargs $(RM) -rf
 
 distclean: clean
