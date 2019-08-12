@@ -1,8 +1,11 @@
-from typing import Any, Dict, Optional, Union, List
+from typing import Any, Dict
+import base64
 import hashlib
 
 import requests
+import phpserialize
 
+from pywhmcs import authentication
 from pywhmcs import clients
 from pywhmcs import tickets
 from pywhmcs import orders
@@ -21,13 +24,14 @@ class Client:
         self.password = password
 
         # Setup bridges
+        self.auth = authentication.AuthenticationBridge(self)
         self.clients = clients.ClientBridge(self)
-        # self.tickets = tickets.TicketBridge(self)
-        # self.orders = orders.OrdersBridge(self)
-        # self.billing = billing.BillingBridge(self)
-        # self.invoices = invoices.InvoiceBridge(self)
-        # self.products = products.ProductsBridge(self)
-        # self.promotions = promotions.PromotionsBridge(self)
+        self.billing = billing.BillingBridge(self)
+        self.invoices = invoices.InvoiceBridge(self)
+        self.orders = orders.OrdersBridge(self)
+        self.products = products.ProductsBridge(self)
+        self.promotions = promotions.PromotionsBridge(self)
+        self.tickets = tickets.TicketBridge(self)
 
     def send_request(self, action: str, params=None) -> Dict[Any, Any]:
         """
@@ -45,6 +49,10 @@ class Client:
             'responsetype': 'json',
             'action': action,
         }
+
+        if 'customfields' in params:
+            payload['customfields'] = base64.b64encode(phpserialize.dumps(params.pop('customfields')))
+
         payload.update(params)
 
         response = requests.post(self.api_url, data=payload)
@@ -54,7 +62,8 @@ class Client:
 
         content = response.json()
 
-        if content.get('result') == 'error':
+        if (content.get('result') == 'error'
+                or content.get('status') == 'error'):
             raise exceptions.from_response(response, action)
 
         return content
