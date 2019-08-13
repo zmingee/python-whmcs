@@ -69,7 +69,10 @@ def client_account(whmcs_client, client_stub):
         state=client_stub['state'],
         postcode=client_stub['postcode'],
         country=client_stub['country'],
-        phone_number=client_stub['phone_number']
+        phone_number=client_stub['phone_number'],
+        cc_type='Visa',
+        cc_pan='4111111111111111',
+        cc_exp_date='1222'
     )
 
     yield client
@@ -94,6 +97,8 @@ def invoice(whmcs_client, client_account):
         send_invoice=False,
         date=date,
         date_due=date_due,
+        items=[('Test item', 5.0, False)],
+        payment_method='bluepay'
     )
 
     return invoice
@@ -112,3 +117,18 @@ def order(whmcs_client, client_account, product):
     )
 
     return order
+
+
+@pytest.fixture(scope='class')
+def ticket(whmcs_client, client_account):
+    ticket = whmcs_client.tickets.create(
+        'Unit Test Ticket',
+        'This is a test ticket',
+        dept_id=1,
+        client_id=client_account.id,
+        admin=True
+    )
+
+    yield ticket
+
+    ticket.delete()
