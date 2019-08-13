@@ -19,6 +19,21 @@ def getid(obj):
         return obj
 
 
+class BaseBridge:
+
+    def __init__(self, client):
+        self.client = client
+
+    def list(self, detailed=True, marker=None, limit=None, **filters) -> List[Union[BaseResource, str]]:
+        pass
+
+    def update(self, resource, **properties):
+        pass
+
+    def delete(self, resource):
+        pass
+
+
 @dataclasses.dataclass
 class BaseResource:
     bridge: dataclasses.InitVar[BaseBridge]
@@ -34,18 +49,3 @@ class BaseResource:
 
     def update(self, **kwargs) -> BaseResource:
         return self.bridge.update(self, **kwargs) # type: ignore
-
-
-class BaseBridge:
-
-    def __init__(self, client):
-        self.client = client
-
-    def list(self, detailed=True, marker=None, limit=None, **filters) -> List[Union[BaseResource, str]]:
-        pass
-
-    def update(self, resource, **properties):
-        pass
-
-    def delete(self, resource):
-        pass
