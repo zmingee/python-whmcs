@@ -46,6 +46,15 @@ class Order(base.BaseResource):
                no_email: Optional[bool] = None) -> None:
         self.bridge.cancel(self)
 
+    def pending(self):
+        self.bridge.pending(self)
+
+    def fraud(self):
+        self.bridge.fraud(self)
+
+    def fraud_check(self):
+        self.bridge.fraud_check(self)
+
 
 class OrdersBridge(base.BaseBridge):
 
@@ -212,6 +221,17 @@ class OrdersBridge(base.BaseBridge):
 
         self.client.send_request('cancelorder', params=params)
 
+    def list(self):
+        raise NotImplementedError
 
+    def pending(self):
+        raise NotImplementedError
 
+    def fraud(self):
+        raise NotImplementedError
 
+    def fraud_check(self):
+        raise NotImplementedError
+
+    def statuses(self):
+        raise NotImplementedError
