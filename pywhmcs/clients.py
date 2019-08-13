@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Union
 import dataclasses
 
 from pywhmcs import base
-from pywhmcs import exceptions
 
 
 @dataclasses.dataclass
@@ -222,42 +221,42 @@ class ClientBridge(base.BaseBridge):
 
         return client
 
-    # def get_clients_products(self,
-    #                          resource: Union[ClientResource, int],
-    #                          service_id: int = None,
-    #                          product_id: int = None,
-    #                          start_number: int = 0) -> dict:
-    #     client_id = base.getid(resource)
+    def get_clients_products(self,
+                             resource: Union[ClientResource, int],
+                             service_id: int = None,
+                             product_id: int = None,
+                             start_number: int = 0) -> dict:
+        client_id = base.getid(resource)
 
-    #     params = {
-    #         k: v for k, v
-    #         in {
-    #             "clientid": client_id,
-    #             "serviceid": service_id,
-    #             "pid": product_id,
-    #             "limitstart": start_number
-    #         }.items() if v is not None
-    #     }
+        params = {
+            k: v for k, v
+            in {
+                "clientid": client_id,
+                "serviceid": service_id,
+                "pid": product_id,
+                "limitstart": start_number
+            }.items() if v is not None
+        }
 
-    #     response = self.client.send_request("GetClientsProducts", params)
+        response = self.client.send_request("GetClientsProducts", params)
 
-    #     if not response["numreturned"]:
-    #         products = []
-    #     else:
-    #         products = response["products"]["product"]
+        if not response["numreturned"]:
+            products = []
+        else:
+            products = response["products"]["product"]
 
-    #     return {
-    #         "total": int(response["totalresults"]),
-    #         "products": products,
-    #         "start_number": int(response["startnumber"])
-    #     }
+        return {
+            "total": int(response["totalresults"]),
+            "products": products,
+            "start_number": int(response["startnumber"])
+        }
 
     def update(self, resource: Union[ClientResource, int], **kwargs) -> None:
         """
-            Update WHMCS client account.
+        Update WHMCS client account.
 
-            :param resource: Instance or ID of client to update
-            """
+        :param resource: Instance or ID of client to update
+        """
 
         params = {
             k: v for (k, v)
@@ -271,7 +270,7 @@ class ClientBridge(base.BaseBridge):
                 'companyname': kwargs.get('company_name'),
                 'country': kwargs.get('country'),
                 'credit': kwargs.get('credit'),
-                'customfields': kwargs.get('custom fields'),
+                'customfields': kwargs.get('custom_fields'),
                 'email': kwargs.get('email'),
                 'expdate': kwargs.get('cc_exp_date'),
                 'firstname': kwargs.get('first_name'),
@@ -309,11 +308,13 @@ class ClientBridge(base.BaseBridge):
         """
         Close WHMCS client account.
 
-        :param resource: ID or Instance of client to close
+        :param resource: :class:`ClientResource` (or its ID) to close
+        :rtype: None
         """
+
         client_id = base.getid(resource)
 
-        response = self.client.send_request(
+        self.client.send_request(
             action='closeclient',
             params={'clientid': client_id}
         )
