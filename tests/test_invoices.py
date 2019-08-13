@@ -35,10 +35,6 @@ class TestInvoices:
         assert invoice.id in [invoice.id for invoice in matches]
 
     def test_update(self, config, whmcs_client, invoice):
-        whmcs_client.invoices.update(invoice.id, status='Paid')
-        invoice = whmcs_client.invoices.get(invoice.id)
-        assert invoice.status == 'Paid'
-
         date = (datetime.datetime.today() + datetime.timedelta(days=1)).date()
         whmcs_client.invoices.update(invoice.id, date=date)
         invoice = whmcs_client.invoices.get(invoice.id)
