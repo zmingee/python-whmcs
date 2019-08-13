@@ -1,16 +1,53 @@
+from typing import Any, Dict, List, Optional, Union
+
+import dataclasses
+import datetime
 import string
 
 from pywhmcs import base
 
 
+@dataclasses.dataclass
+class Ticket(base.BaseResource):
+    id: int
+    admin: Optional[str]
+    cc_email: Optional[str]
+    client_id: int
+    contact_id: Optional[int]
+    date: datetime.datetime
+    date_last_reply: datetime.datetime
+    dept_id: int
+    dept_name: str
+    email: str
+    flag: Optional[int]
+    name: str
+    notes: List[str]
+    number: int
+    priority: str
+    replies: List[Dict[str, str]]
+    service_id: Optional[str]
+    status: str
+    subject: str
+
+
 class TicketBridge(base.BaseBridge):
 
-    def open(self, subject, message, dept_id, client_id=None, contact_id=None,
-             name=None, email=None, priority=None, service_id=None,
-             domain_id=None, admin=False, markdown=False,
-             customfields=None) -> int:
+    def create(self,
+               subject: str,
+               message: str,
+               dept_id: int,
+               client_id: Optional[int] = None,
+               contact_id: Optional[int] = None,
+               name: Optional[str] = None,
+               email: Optional[str] = None,
+               priority: Optional[str] = None,
+               service_id: Optional[int] = None,
+               domain_id: Optional[int] = None,
+               admin: Optional[bool] = None,
+               markdown: Optional[bool] = None,
+               custom_fields: Optional[List[Any]] = None) -> int:
         """
-        Open a ticket.
+        Open a ticket via WHMCS API method ``OpenTicket``.
 
         :param int dept_id: ID of department to open the ticket in
         :param str subject: Subject of the ticket
@@ -55,7 +92,7 @@ class TicketBridge(base.BaseBridge):
                 "domainid": domain_id,
                 "admin": 1 if admin else 0,
                 "markdown": 1 if markdown else 0,
-                "customfields": customfields
+                "customfields": custom_fields
             }.items()
             if v is not None
         }
@@ -70,79 +107,71 @@ class TicketBridge(base.BaseBridge):
                 "Parameter contact_id also requires client_id"
             )
 
-        response = self.client.send_request("OpenTicket", params)
+        response = self.client.send_request("openticket", params=params)
 
-        return int(response["tid"])
+        ticket = self.get(int(response['id']))
 
-    def get_tickets(self, start_number=0, limit=25, dept_id=None, client_id=None,
-                    email=None, status=None, subject=None,
-                    ignore_dept_assignments=False) -> dict:
+        return ticket
+
+    def get(self, resource: int):
         """
-        Get a list of tickets.
+        Get a ticket.
 
-        Gets a list of tickets matching the parameters passed.
-
-        :param int start_number: Offset for the returned resources
-        :param int limit: Number of resources to return
-        :param int dept_id: Limit query to specific department ID
-        :param int client_id: Limit query to specific client ID
-        :param str email: Limit query to specific non-client email address
-        :param str status: Limit query to those matching status
-        :param str subject: Limit query to those matching subject
-        :param bool ignore_dept_assignments:
-            Pass as ``True`` to _not_ limit to the departments the calling user is
-            a member of.
-        :return: Tickets matching the defined parameters.
-        :rtype: dict
+        :param int resource: ID of ticket to retrieve
+        :return: Ticket
+        :rtype: :class:`Ticket`
         """
 
-        params = {
-            "limitstart": start_number,
-            "limitnum": limit,
-            "deptid": dept_id,
-            "clientid": client_id,
-            "email": email,
-            "status": status,
-            "subject": subject,
-            "ignore_dept_assignments": ignore_dept_assignments
-        }
-        params = {k: v for k, v in params.items() if v is not None}
+        response = self.client.send_request(
+            'getticket',
+            params={'ticketid': resource}
+        )
 
-        response = self.client.send_request("GetTickets", params)
-
-        if not response["numreturned"]:
-            tickets = []
+        if response['replies']:
+            replies = [reply for reply in response['replies']['reply']]
         else:
-            tickets = response["tickets"]["ticket"]
+            replies = []
 
-        return {
-            "total": int(response["totalresults"]),
-            "tickets": tickets,
-            "start_number": int(response["startnumber"])
-        }
+        if response['notes']:
+            notes = response['notes']
+        else:
+            notes = []
 
-    def get_support_departments(self, ignore_dept_assignments=True):
+        ticket = Ticket(
+            self,
+            id=int(response['ticketid']),
+            admin=response['admin'] or None,
+            cc_email=response['cc'] or None,
+            client_id=int(response['userid']),
+            contact_id=int(response['contactid']) or None,
+            date=datetime.datetime.strptime(response['date'], '%Y-%m-%d %H:%M:%S'),
+            date_last_reply=datetime.datetime.strptime(response['date'], '%Y-%m-%d %H:%M:%S'),
+            dept_id=int(response['deptid']),
+            dept_name=response['deptname'],
+            email=response['email'],
+            flag=int(response['flag']) or None,
+            name=response['name'],
+            notes=notes,
+            number=int(response['tid']),
+            priority=response['priority'].lower(),
+            replies=replies,
+            service_id=response['service'] or None,
+            status=response['status'].lower(),
+            subject=response['subject']
+        )
+
+        return ticket
+
+    def delete(self, resource: Union[int, Ticket]) -> None:
         """
-        Get WHMCS support departments.
+        Delete a ticket.
 
-        Also provides limited stats on the department.
-
-        :return: List of WHMCS support departments
-        :rtype: list
+        :param str resource: Ticket (or its ID) to delete
+        :return: Does not return
+        :rtype: None
         """
 
-        params = {"ignore_dept_assignments": ignore_dept_assignments}
-
-        response = self.client.send_request("GetSupportDepartments", params)
-
-        departments = []
-        for department in response["departments"]["department"]:
-            departments.append({
-                "id": department["id"],
-                "name": department["name"],
-                "open_tickets": department["opentickets"],
-                "awaiting_reply": department["awaitingreply"]
-            })
-
-        return departments
-
+        self.client.send_request(
+            'deleteticket',
+            params={'ticketid': base.getid(resource)}
+        )
