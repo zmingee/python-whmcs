@@ -5,15 +5,15 @@ import hashlib
 import requests
 import phpserialize
 
-from pywhmcs import authentication
-from pywhmcs import clients
-from pywhmcs import tickets
-from pywhmcs import orders
 from pywhmcs import billing
+from pywhmcs import clients
+from pywhmcs import exceptions
+from pywhmcs import general
 from pywhmcs import invoices
+from pywhmcs import orders
 from pywhmcs import products
 from pywhmcs import promotions
-from pywhmcs import exceptions
+from pywhmcs import tickets
 
 
 class Client:
@@ -24,9 +24,9 @@ class Client:
         self.password = password
 
         # Setup bridges
-        self.auth = authentication.AuthenticationBridge(self)
-        self.clients = clients.ClientBridge(self)
         self.billing = billing.BillingBridge(self)
+        self.clients = clients.ClientBridge(self)
+        self.general = general.GeneralBridge(self)
         self.invoices = invoices.InvoiceBridge(self)
         self.orders = orders.OrdersBridge(self)
         self.products = products.ProductsBridge(self)
