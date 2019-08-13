@@ -50,11 +50,10 @@ builddir:
 	@mkdir -p build
 
 clean:
-	@- $(RM) -r build
-	@- $(RM) -r dist
+	@- $(RM) -r $(BUILD)
 	@- $(RM) -rf .mypy_cache
-	@- $(RM) -rf ".coverage"
-	@- find . -name "*.egg-info" | xargs $(RM) -rf
+	@- $(RM) -rf .coverage
+	@- $(RM) -rf .pytest_cache
 	@- find . -name "*.pyc" | xargs $(RM) -rf
 	@- find . -name "__pycache__" | xargs $(RM) -rf
 
