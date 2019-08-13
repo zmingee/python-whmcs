@@ -33,9 +33,9 @@ release:
 check:
 	pytest \
 		-rfE \
-		--tb=short \
-		--show-capture=no \
 		--maxfail=10 \
+		--show-capture=no \
+		--tb=short \
 		--cov=pywhmcs \
 		--cov-report term-missing:skip-covered \
 		$(TESTS_DIR)/
