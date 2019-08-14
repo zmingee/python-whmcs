@@ -99,6 +99,7 @@ class OrdersBridge(base.BaseBridge):
                 'billingcycle': billing_cycle,
                 'clientid': client_id,
                 'clientip': client_ip,
+                'customfields': custom_fields,
                 'hostname': hostname,
                 'noemail': no_email,
                 'noinvoiceemail': no_invoice,
@@ -106,7 +107,7 @@ class OrdersBridge(base.BaseBridge):
                 'pid': product_id,
                 'priceoverride': price_override,
                 'promocode': promo_code,
-                'promooverride': promo_override,
+                'promooverride': promo_override
             }.items() if value is not None
         }
 
