@@ -214,7 +214,7 @@ class ClientBridge(base.BaseBridge):
             security_q_id=response['securityqid'],
             security_q_ans=response['securityqans'],
             separate_invoices=response['separateinvoices'],
-            status=response['status'],
+            status=response['status'].lower(),
             twofa_enabled=response['twofaenabled'],
             custom_fields=response['customfields']
         )

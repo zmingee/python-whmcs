@@ -163,7 +163,7 @@ class OrdersBridge(base.BaseBridge):
             promo_type=whmcs_order['promotype'] or None,
             promo_value=whmcs_order['promovalue'] or None,
             renewals=whmcs_order['renewals'] or None,
-            status=whmcs_order['status'],
+            status=whmcs_order['status'].lower(),
             transfer_secret=whmcs_order['transfersecret'] or None,
         )
 
