@@ -84,9 +84,9 @@ class ClientBridge(base.BaseBridge):
                security_q_id: Optional[str] = None,
                security_q_ans: Optional[str] = None,
                notes: Optional[str] = None,
-               cc_type: Optional[str] = None,
-               cc_pan: Optional[str] = None,
-               cc_exp_date: Optional[str] = None,
+               card_type: Optional[str] = None,
+               card_num: Optional[str] = None,
+               card_exp_date: Optional[str] = None,
                start_date: Optional[str] = None,
                issue_number: Optional[str] = None,
                custom_fields: Optional[str] = None,
@@ -128,9 +128,9 @@ class ClientBridge(base.BaseBridge):
             'securityqid': security_q_id,
             'securityqans': security_q_ans,
             'notes': notes,
-            'cardtype': cc_type,
-            'cardnum': cc_pan,
-            'expdate': cc_exp_date,
+            'cardtype': card_type,
+            'cardnum': card_num,
+            'expdate': card_exp_date,
             'startdate': start_date,
             'issuenumber': issue_number,
             'customfields': custom_fields,
@@ -264,15 +264,15 @@ class ClientBridge(base.BaseBridge):
                 'clientid': str(base.getid(resource)),
                 'address1': kwargs.get('address1'),
                 'address2': kwargs.get('address2'),
-                'cardnum': kwargs.get('cc_pan'),
-                'cardtype': kwargs.get('cc_type'),
+                'cardnum': kwargs.get('card_num'),
+                'cardtype': kwargs.get('card_type'),
                 'city': kwargs.get('city'),
                 'companyname': kwargs.get('company_name'),
                 'country': kwargs.get('country'),
                 'credit': kwargs.get('credit'),
                 'customfields': kwargs.get('custom_fields'),
                 'email': kwargs.get('email'),
-                'expdate': kwargs.get('cc_exp_date'),
+                'expdate': kwargs.get('card_exp_date'),
                 'firstname': kwargs.get('first_name'),
                 'lastname': kwargs.get('last_name'),
                 'notes': kwargs.get('notes'),
@@ -315,4 +315,58 @@ class ClientBridge(base.BaseBridge):
         self.client.send_request(
             action='closeclient',
             params={'clientid': client_id}
+        )
+
+    def add_pay_method(self,
+                       resource: Union[ClientResource, int],
+                       bank_account: Optional[str] = None,
+                       bank_account_type: Optional[str] = None,
+                       bank_code: Optional[str] = None,
+                       bank_name: Optional[str] = None,
+                       card_expiry: Optional[str] = None,
+                       card_issue_number: Optional[str] = None,
+                       card_number: Optional[str] = None,
+                       description: Optional[str] = None,
+                       gateway_module_name: Optional[str] = None,
+                       method_type: Optional[str] = None,
+                       set_as_default: Optional[bool] = None) -> None:
+        """
+        Add a pay method. Supports bank account and credit card methods.
+
+        :param str method_type: Type of pay method to add
+        :param str description: Description of pay method
+        :param str gateway_module_name: Name of gateway module for pay method
+        :param str card_number: Credit card number. Required for ``CreditCard``
+            pay method type
+        :param str card_expiry: Credit card expiration date. Required for
+            ``CreditCard`` pay method type. Must be in ``MMYY`` format.
+        :param str card_issue_number: Credit card issue number
+        :param str bank_name: Name of bank for ``BankAccount`` pay method type.
+        :param str bank_account_type: Type of bank for ``BankAccount`` pay
+            method type, such as checking or credit
+        :param str bank_code: Bank code or routing number. Required for
+            ``BankAccount`` pay method type.
+        :param str bank_account: Bank account number. Required for
+            ``BankAccount`` pay method type.
+        param bool set_as_default: Set pay method as default.
+        """
+
+        raise NotImplementedError('Pending WHMCS v7.8 release - https://docs.whmcs.com/Version_7.8_Release_Notes#Time-Based_Tokens_now_Freely_Available')
+
+        self.client.send_request(
+            action='addpaymethod',
+            params={
+                'clientid': base.getid(resource),
+                'bank_account': bank_account,
+                'bank_account_type': bank_account_type,
+                'bank_code': bank_code,
+                'bank_name': bank_name,
+                'card_expiry': card_expiry,
+                'card_issue_number': card_issue_number,
+                'card_number': card_number,
+                'description': description,
+                'gateway_module_name': gateway_module_name,
+                'set_as_default': set_as_default,
+                'type': method_type,
+            }
         )

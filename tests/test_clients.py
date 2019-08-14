@@ -72,3 +72,26 @@ class TestClients:
         client_account = whmcs_client.clients.get(client_account.id)
 
         assert client_account.status.lower() == 'closed'
+
+    @pytest.mark.skip(reason='Pending WHMCS v7.8 release')
+    def test_add_pay_method(self, whmcs_client, client_account):
+        whmcs_client.clients.add_pay_method(
+            client_account,
+            method_type='CreditCard',
+            card_number='42424242424242424242',
+            card_expiry='1222',
+            set_as_default=True
+        )
+
+        client_account = whmcs_client.clients.get(client_account.id)
+
+        assert client_account.cc_last_four == '4242'
+        assert client_account.cc_type.lower() == 'visa'
+
+    def test_get_products(self, whmcs_client, client_account, product, order):
+        matches = whmcs_client.clients.get_products(
+            client_account,
+            product_id=product.id
+        )
+
+        assert order.id in [int(product['orderid']) for product in matches]

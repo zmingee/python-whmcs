@@ -70,9 +70,9 @@ def client_account(whmcs_client, client_stub):
         postcode=client_stub['postcode'],
         country=client_stub['country'],
         phone_number=client_stub['phone_number'],
-        cc_type='Visa',
-        cc_pan='4111111111111111',
-        cc_exp_date='1222'
+        card_type='Visa',
+        card_num='4111111111111111',
+        card_exp_date='1222'
     )
 
     yield client
