@@ -1,13 +1,22 @@
 from typing import Any, Dict
+import base64
 import hashlib
 
 import requests
+import phpserialize
 
 from pywhmcs import clients
+from pywhmcs import exceptions
+from pywhmcs import general
+from pywhmcs import invoices
+from pywhmcs import orders
+from pywhmcs import products
+from pywhmcs import promotions
 from pywhmcs import tickets
 
 
 class Client:
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, api_url: str, username: str, password: str):
         self.api_url = api_url
@@ -16,6 +25,11 @@ class Client:
 
         # Setup bridges
         self.clients = clients.ClientBridge(self)
+        self.general = general.GeneralBridge(self)
+        self.invoices = invoices.InvoiceBridge(self)
+        self.orders = orders.OrdersBridge(self)
+        self.products = products.ProductsBridge(self)
+        self.promotions = promotions.PromotionsBridge(self)
         self.tickets = tickets.TicketBridge(self)
 
     def send_request(self, action: str, params=None) -> Dict[Any, Any]:
@@ -34,9 +48,21 @@ class Client:
             'responsetype': 'json',
             'action': action,
         }
+
+        if 'customfields' in params:
+            payload['customfields'] = base64.b64encode(phpserialize.dumps(params.pop('customfields')))
+
         payload.update(params)
 
         response = requests.post(self.api_url, data=payload)
+
+        if response.status_code != 200:
+            raise exceptions.from_response(response, action)
+
         content = response.json()
+
+        if (content.get('result') == 'error'
+                or content.get('status') == 'error'):
+            raise exceptions.from_response(response, action)
 
         return content

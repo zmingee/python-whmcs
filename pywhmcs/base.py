@@ -19,17 +19,6 @@ def getid(obj):
         return obj
 
 
-@dataclasses.dataclass
-class BaseResource:
-    bridge: dataclasses.InitVar[BaseBridge]
-
-    def __post_init__(self, bridge):
-        self.bridge = bridge
-
-    def to_dict(self) -> Dict[str, Any]:
-        return dataclasses.asdict(self)
-
-
 class BaseBridge:
 
     def __init__(self, client):
@@ -43,3 +32,20 @@ class BaseBridge:
 
     def delete(self, resource):
         pass
+
+
+@dataclasses.dataclass
+class BaseResource:
+    bridge: dataclasses.InitVar[BaseBridge]
+
+    def __post_init__(self, bridge):
+        self.bridge = bridge
+
+    def delete(self) -> None:
+        return self.bridge.delete(self) # type: ignore
+
+    def to_dict(self) -> Dict[str, Any]:
+        return dataclasses.asdict(self)
+
+    def update(self, **kwargs) -> BaseResource:
+        return self.bridge.update(self, **kwargs) # type: ignore
