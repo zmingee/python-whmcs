@@ -221,35 +221,29 @@ class ClientBridge(base.BaseBridge):
 
         return client
 
-    def get_clients_products(self,
-                             resource: Union[ClientResource, int],
-                             service_id: int = None,
-                             product_id: int = None,
-                             start_number: int = 0) -> dict:
+    def get_products(self,
+                     resource: Union[ClientResource, int],
+                     service_id: int = None,
+                     product_id: int = None) -> dict:
         client_id = base.getid(resource)
 
         params = {
             k: v for k, v
             in {
                 "clientid": client_id,
-                "serviceid": service_id,
                 "pid": product_id,
-                "limitstart": start_number
+                "serviceid": service_id
             }.items() if v is not None
         }
 
-        response = self.client.send_request("GetClientsProducts", params)
+        response = self.client.send_request("getclientsproducts", params)
 
         if not response["numreturned"]:
-            products = []
+            matches = []
         else:
-            products = response["products"]["product"]
+            matches = response["products"]["product"]
 
-        return {
-            "total": int(response["totalresults"]),
-            "products": products,
-            "start_number": int(response["startnumber"])
-        }
+        return matches
 
     def update(self, resource: Union[ClientResource, int], **kwargs) -> None:
         """
