@@ -221,7 +221,7 @@ class OrdersBridge(base.BaseBridge):
 
         self.client.send_request('cancelorder', params=params)
 
-    def list(self):
+    def list(self, detailed=True, marker=None, limit=None, **filters) -> List[Union[Order, str]]:
         raise NotImplementedError
 
     def pending(self):

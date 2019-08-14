@@ -78,12 +78,12 @@ class ClientBridge(base.BaseBridge):
                company_name: Optional[str] = None,
                address2: Optional[str] = None,
                currency: Optional[int] = None,
-               client_ip: Optional[str]=None,
-               language: Optional[str] =None,
+               client_ip: Optional[str] = None,
+               language: Optional[str] = None,
                group_id: Optional[str] = None,
                security_q_id: Optional[str] = None,
                security_q_ans: Optional[str] = None,
-               notes: Optional[str] =None,
+               notes: Optional[str] = None,
                cc_type: Optional[str] = None,
                cc_pan: Optional[str] = None,
                cc_exp_date: Optional[str] = None,
@@ -139,7 +139,7 @@ class ClientBridge(base.BaseBridge):
         }
         params = {k: v for k, v in params.items() if v is not None}
 
-        response = self.client.send_request(
+        self.client.send_request(
             action='addclient',
             params=params
         )
@@ -284,12 +284,10 @@ class ClientBridge(base.BaseBridge):
             }.items() if v is not None
         }
 
-        response = self.client.send_request(
+        self.client.send_request(
             action='updateclient',
             params=params
         )
-
-        return self.get(base.getid(resource))
 
     def delete(self, resource: Union[ClientResource, int]) -> None:
         """
@@ -299,7 +297,7 @@ class ClientBridge(base.BaseBridge):
         """
         client_id = base.getid(resource)
 
-        response = self.client.send_request(
+        self.client.send_request(
             action='deleteclient',
             params={'clientid': client_id}
         )

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 import dataclasses
 import datetime
 
@@ -128,10 +128,7 @@ class InvoiceBridge(base.BaseBridge):
 
         return invoice
 
-    def list(self,
-             idx: Optional[int] = None,
-             limit: Optional[int] = None,
-             **kwargs) -> List[Invoice]:
+    def list(self, detailed=True, marker=None, limit=None, **filters) -> List[Union[Invoice, str]]:
         """
         List and filter invoices.
 
@@ -146,9 +143,9 @@ class InvoiceBridge(base.BaseBridge):
         params = {
             key: value for (key, value)
             in {
-                'userid': kwargs.get('client_id'),
-                'status': kwargs.get('status'),
-                'limitstart': idx,
+                'userid': filters.get('client_id'),
+                'status': filters.get('status'),
+                'limitstart': marker,
                 'limitnum': limit
             }.items() if value is not None
         }

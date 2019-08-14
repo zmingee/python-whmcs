@@ -3,7 +3,6 @@ import dataclasses
 import datetime
 
 from pywhmcs import base
-from pywhmcs import exceptions
 
 
 @dataclasses.dataclass

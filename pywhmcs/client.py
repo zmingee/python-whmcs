@@ -16,6 +16,7 @@ from pywhmcs import tickets
 
 
 class Client:
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, api_url: str, username: str, password: str):
         self.api_url = api_url
